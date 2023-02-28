@@ -22,7 +22,7 @@ void print_job(int myid)
 {
 
 	// Status print
-	printf("Printer %d printing slot %d: %s\n", myid, it_next_remove, spooler[it_next_remove]);
+	printf("{Printer} %d printing from slot %d: \"%s\"\n", myid, it_next_remove, spooler[it_next_remove]);
 
 	// Free the "next to remove" location in spooler and pause for 1 seoncd
 	free(spooler[it_next_remove]);
@@ -49,7 +49,7 @@ void produce_job(int myid, int job)
 {
 
 	// Print status
-	printf("Process %d is creating print job #%d in spooler slot %d\n", myid, job, it_next_add);
+	printf("[Producer] %d is creating print job #%d in spooler slot %d\n", myid, job, it_next_add);
 
 	// Create and announce print job string, store it in spooler 
 	char *text = (char*)malloc(BUFFER_SIZE * sizeof(char));

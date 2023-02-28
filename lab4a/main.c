@@ -11,8 +11,8 @@
 
 
 	Status:
-
-
+		
+		- todo - implement strict alternation solution. 
 
 
 	Author: OCdt Velasco
