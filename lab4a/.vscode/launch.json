@@ -1,0 +1,15 @@
+{
+    "configurations": [
+        {
+            "name": "Run debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/main",
+            "args": ["arg1", "arg2"],
+            "cwd": "${workspaceFolder}",
+            "stopAtEntry": false,
+            "miDebuggerArgs": "-q -ex quit; wait() { fg >/dev/null; }; /bin/gdb -q --interpreter=mi",
+            "preLaunchTask": "make debug",
+        },
+    ]
+}
