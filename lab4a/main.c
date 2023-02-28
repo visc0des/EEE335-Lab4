@@ -1,8 +1,39 @@
+/* 
+
+	Description:
+
+		Code for Lab 4 of the course EEE335.
+
+	
+	Notes: 
+
+		- Changed print statements in util.c functions to make reading easier. 
+
+
+	Status:
+
+
+
+
+	Author: OCdt Velasco
+	Version: started on February 28, 2023
+	
+
+*/
+
+
+
+
 #include "util.h"
 #include "freeforall.h"
 #include "strict_alternation.h"
 #include "peterson.h"
 #include "semaphores.h"
+
+
+// --- Declaring demo functions ---
+
+
 
 
 int main(void) {
