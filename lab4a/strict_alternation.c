@@ -4,6 +4,18 @@
 
 		Iteration of spooler program with strict alternation solution. 
 
+	Plan:
+
+		Okay, we will have a global variable called <turn>. 
+		This will keep track of which thread gets to access the spooler 
+		at once time. 
+
+		When turn = 0, it's the producer's turn to be in the spooler.
+		When turn = 1, it's the printer's turn to be in the spooler.
+
+		I'll just be following the examples from the class notes.
+
+
 */
 
 // --- Import moudles ---
@@ -14,6 +26,13 @@
 
 // --- Create Needed Global Variables ---
 
+// Creating enum for convenience.
+enum TURN {
+	PRODUCER = 0,
+	PRINTER = 1
+};
+
+int turn = PRODUCER; // Initialize producer to be first in spooler. 
 
 
 void *strict_printer(void *arg)
@@ -25,7 +44,15 @@ void *strict_printer(void *arg)
 	// Have it print jobs forever
 	while(true)
 	{
+
+		// If not printer's turn, wait
+		while (turn != PRINTER) {}
+
+		// When printer's turn, do work in spooler
+		// and switch turn to producer.
 		print_job(myid);
+		turn = PRODUCER;
+
 		sleep(4);
 	}
 }
@@ -41,7 +68,15 @@ void *strict_process(void *arg)
 	// Have it create print jobs forever
 	while(true)
 	{
+
+		// Wait for producer's turn
+		while (turn != PRODUCER) {}
+
+		// When producer's turn, do work in spooler
+		// and switch turn to printer
 		produce_job(myid, job);
+		turn = PRINTER;
+
 		job++;
 		sleep(1);
 	}
