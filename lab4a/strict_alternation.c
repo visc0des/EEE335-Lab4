@@ -18,7 +18,7 @@
 
 */
 
-// --- Import moudles ---
+// --- Import modules ---
 
 #include "strict_alternation.h"
 #include "util.h"

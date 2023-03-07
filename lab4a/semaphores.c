@@ -1,5 +1,39 @@
+/* 
+
+	Description:
+
+		Iteration of spooler program with semaphores. 
+
+	Plan:
+
+		Pretty self explanatory. Just use sempahores to 
+		ensure certain processes go to sleep when another is in the
+		spooler, and certain processes sleep when the spooler is
+		empty/full (though it should never become empty).
+
+
+		Pay attention with order!
+
+		sem_post() -> up()
+		sem_wait() -> down()
+		sem_init() -> for creation
+
+	
+*/
+
+
+// --- Import modules ---
+
 #include "semaphores.h"
 #include "util.h"
+#include <semaphore.h>
+
+// --- Created needed global variables ---
+
+// Creating semaphores
+sem_t spooler_open;
+sem_t empty;
+sem_t full;
 
 
 void *semaphore_printer(void *arg)
@@ -8,7 +42,18 @@ void *semaphore_printer(void *arg)
 
 	while(true)
 	{
+
+		// Decrement full space sema, then set spooler_open sem to locked
+		sem_wait(&full);
+		sem_wait(&spooler_open);		
+
+		// Do print job
 		print_job(myid);
+
+		// When finihed, unlock spooler_open, and increment empty sema
+		sem_post(&spooler_open);
+		sem_post(&empty);
+
 		sleep(4);
 	}
 }
@@ -21,8 +66,19 @@ void *semaphore_process(void *arg)
 
 	while(true)
 	{
+
+		// Decrement empty space sema, set spooler_open sem to locked
+		sem_wait(&empty);
+		sem_wait(&spooler_open);
+
+		// Create print job
 		produce_job(myid, job);
 		job++;
+
+		// Unlocked spooler_open, increment full sema
+		sem_post(&spooler_open);
+		sem_post(&full);
+
 		sleep(1);
 	}
 }
@@ -30,9 +86,31 @@ void *semaphore_process(void *arg)
 
 void demo_semaphores()
 {
-	// Initialize semaphores
-	/* INSERT CODE HERE */
+	// -- Initialize semaphores --
 
+	// Spooler mutex
+	int result = sem_init(&spooler_open, 1, 0); 
+	if (result != 0) {
+		printf("\nERROR - created spooler_open sempahore returned code: %d", result);
+		exit(-1);
+	}
+
+	// Semaphore for empty spaces (intialize to 10)
+	result = sem_init(&empty, 10, 0); 
+	if (result != 0) {
+		printf("\nERROR - created empty sempahore returned code: %d", result);
+		exit(-1);
+	}
+
+	// Sempahore for full slots (initialize to 0)
+	result = sem_init(&full, 0, 0); 
+	if (result != 0) {
+		printf("\nERROR - created full sempahore returned code: %d", result);
+		exit(-1);
+	}
+
+
+	// Created threads and execute them accordingly
 	pthread_t process_thread0;
 	pthread_t process_thread1;
 	pthread_t printer_thread0;
