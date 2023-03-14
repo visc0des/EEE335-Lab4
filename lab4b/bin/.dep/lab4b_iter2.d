@@ -1,4 +1,5 @@
-bin/.obj/./main.o: main.c /usr/include/stdc-predef.h /usr/include/stdio.h \
+bin/.obj/./lab4b_iter2.o: lab4b_iter2.c /usr/include/stdc-predef.h \
+ /usr/include/stdio.h \
  /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/x86_64-linux-gnu/bits/wordsize.h \
@@ -81,8 +82,7 @@ bin/.obj/./main.o: main.c /usr/include/stdc-predef.h /usr/include/stdio.h \
  /usr/include/x86_64-linux-gnu/bits/fcntl.h \
  /usr/include/x86_64-linux-gnu/bits/fcntl-linux.h \
  /usr/include/x86_64-linux-gnu/bits/stat.h \
- /usr/include/x86_64-linux-gnu/bits/struct_stat.h \
- /usr/include/semaphore.h /usr/include/x86_64-linux-gnu/bits/semaphore.h
+ /usr/include/x86_64-linux-gnu/bits/struct_stat.h
 /usr/include/stdc-predef.h:
 /usr/include/stdio.h:
 /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:
@@ -175,5 +175,3 @@ bin/.obj/./main.o: main.c /usr/include/stdc-predef.h /usr/include/stdio.h \
 /usr/include/x86_64-linux-gnu/bits/fcntl-linux.h:
 /usr/include/x86_64-linux-gnu/bits/stat.h:
 /usr/include/x86_64-linux-gnu/bits/struct_stat.h:
-/usr/include/semaphore.h:
-/usr/include/x86_64-linux-gnu/bits/semaphore.h:

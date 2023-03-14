@@ -1,4 +1,5 @@
-bin/.obj/./main.o: main.c /usr/include/stdc-predef.h /usr/include/stdio.h \
+bin/.obj/./lab4b_iter1.o: lab4b_iter1.c /usr/include/stdc-predef.h \
+ /usr/include/stdio.h \
  /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/x86_64-linux-gnu/bits/wordsize.h \
@@ -72,17 +73,7 @@ bin/.obj/./main.o: main.c /usr/include/stdc-predef.h /usr/include/stdio.h \
  /usr/include/x86_64-linux-gnu/bits/ss_flags.h \
  /usr/include/x86_64-linux-gnu/bits/types/struct_sigstack.h \
  /usr/include/x86_64-linux-gnu/bits/sigthread.h \
- /usr/include/x86_64-linux-gnu/bits/signal_ext.h \
- /usr/include/x86_64-linux-gnu/sys/mman.h \
- /usr/include/x86_64-linux-gnu/bits/mman.h \
- /usr/include/x86_64-linux-gnu/bits/mman-map-flags-generic.h \
- /usr/include/x86_64-linux-gnu/bits/mman-linux.h \
- /usr/include/x86_64-linux-gnu/bits/mman-shared.h /usr/include/fcntl.h \
- /usr/include/x86_64-linux-gnu/bits/fcntl.h \
- /usr/include/x86_64-linux-gnu/bits/fcntl-linux.h \
- /usr/include/x86_64-linux-gnu/bits/stat.h \
- /usr/include/x86_64-linux-gnu/bits/struct_stat.h \
- /usr/include/semaphore.h /usr/include/x86_64-linux-gnu/bits/semaphore.h
+ /usr/include/x86_64-linux-gnu/bits/signal_ext.h
 /usr/include/stdc-predef.h:
 /usr/include/stdio.h:
 /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:
@@ -165,15 +156,3 @@ bin/.obj/./main.o: main.c /usr/include/stdc-predef.h /usr/include/stdio.h \
 /usr/include/x86_64-linux-gnu/bits/types/struct_sigstack.h:
 /usr/include/x86_64-linux-gnu/bits/sigthread.h:
 /usr/include/x86_64-linux-gnu/bits/signal_ext.h:
-/usr/include/x86_64-linux-gnu/sys/mman.h:
-/usr/include/x86_64-linux-gnu/bits/mman.h:
-/usr/include/x86_64-linux-gnu/bits/mman-map-flags-generic.h:
-/usr/include/x86_64-linux-gnu/bits/mman-linux.h:
-/usr/include/x86_64-linux-gnu/bits/mman-shared.h:
-/usr/include/fcntl.h:
-/usr/include/x86_64-linux-gnu/bits/fcntl.h:
-/usr/include/x86_64-linux-gnu/bits/fcntl-linux.h:
-/usr/include/x86_64-linux-gnu/bits/stat.h:
-/usr/include/x86_64-linux-gnu/bits/struct_stat.h:
-/usr/include/semaphore.h:
-/usr/include/x86_64-linux-gnu/bits/semaphore.h:
