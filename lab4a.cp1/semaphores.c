@@ -36,6 +36,10 @@ sem_t empty;
 sem_t full;
 
 
+// --- Creating a global print job counter to make clear threads are not stepping over eachother ---
+int global_printjob_counter = 0;
+
+
 void *semaphore_printer(void *arg)
 {
 	int myid = *((int*)arg);
@@ -72,8 +76,9 @@ void *semaphore_process(void *arg)
 		sem_wait(&spooler_open);
 
 		// Create print job
-		produce_job(myid, job);
-		job++;
+		produce_job(myid, global_printjob_counter);
+		global_printjob_counter++;
+		//job++;
 
 		// Unlocked spooler_open, increment full sema
 		sem_post(&spooler_open);
@@ -88,7 +93,6 @@ void demo_semaphores()
 {
 	// -- Initialize semaphores --
 
-	printf("\nWe're going to create the sempahores.");
 
 	// Spooler mutex
 	int result = sem_init(&spooler_open, 0, 1); 
@@ -96,7 +100,7 @@ void demo_semaphores()
 		printf("\nERROR - created spooler_open sempahore returned code: %d", result);
 		exit(-1);
 	}
-	printf("\nFirst semaphore created.");
+
 
 	// Semaphore for empty spaces (intialize to 10)
 	result = sem_init(&empty, 0, SPOOLER_SIZE); 
@@ -105,7 +109,6 @@ void demo_semaphores()
 		exit(-1);
 	}
 
-	printf("\nSecond sempahore created.");
 
 	// Sempahore for full slots (initialize to 0)
 	result = sem_init(&full, 0, 0); 
@@ -114,7 +117,6 @@ void demo_semaphores()
 		exit(-1);
 	}
 
-	printf("\nWe've created the sempahores.");
 
 	// Created threads and execute them accordingly
 	pthread_t process_thread0;
