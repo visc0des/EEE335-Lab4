@@ -43,7 +43,18 @@
 
 
 // -- Declaring Macros --
+
 #define PHILO_COUNT 5
+#define THINKING 	0 		// Philosopher macros to represent states
+#define HUNGRY 		1
+#define EATING 		2	
+#define FINISHED 	4
+
+#define LEFT		(i + PHILO_COUNT - 1) % PHILO_COUNT
+#define RIGHT 		(i + 1) % PHILO_COUNT
+
+#define THINK_TIME 	2
+#define EAT_TIME 	3
 
 
 // --- Initializing variables ---
@@ -53,9 +64,11 @@
 
 struct shared_memory {
 	
-	int k; // <-- for testing in iteration 2 and 3 of shared memory
+	sem_t mutex;		// Semaphore for when philos enter their crit reg. 
+	sem_t philo_sem[5]; // Semaphores repping philos getting forks 
 
-	sem_t add_mutex;
+	// Creating array of states tracking if philos are thinking, hungry, or eating
+	int philo_state[5];
 
 };
 
@@ -63,6 +76,14 @@ struct shared_memory {
 // --- Declaring Function Prototypes ---
 void philosopher(int i, struct shared_memory* shared_mem);
 void parent();
+void philo_think();
+void philo_eat();
+void take_forks(int i, struct shared_memory* shared_mem);
+void put_forks(int i, struct shared_memory* shared_mem);
+void test_forks(int i, struct shared_memory* shared_mem);
+void printer_process(struct shared_memory* shared_mem);
+int check_finished(int states[PHILO_COUNT]);
+
 
 // --- Main Entry Point ---
 
@@ -97,13 +118,26 @@ int main(void)
 		exit(-1);
 	}
 	
-	// Initialize shared sempahore and its k value
-	int sem_result = sem_init(&shared_mem->add_mutex, 1, 1);
+	// Initialize shared shared mutex to 1
+	int sem_result = sem_init(&shared_mem -> mutex, 1, 1);
 	if (sem_result == -1) {
-		printf("Creation of semaphore failed.\n");
+		printf("Creation of mutex failed.\n");
 		exit(-1);
 	}
-	shared_mem -> k = 0;
+	
+	// Initialize all philosopher semaphores to 0 (none of them have forks yet),
+	// and set their states to all THINKING. 
+	for (int i = 0; i < PHILO_COUNT; i++) {
+		
+		sem_result = sem_init(&shared_mem -> philo_sem[i], 1, 0);
+		if (sem_result == -1) {
+			printf("Creation of philosopher semaphore failed.\n");
+			exit(-1);
+		}
+
+		shared_mem -> philo_state[i] = THINKING;
+
+	}
 
 
 	// Declaring var to capture fork() return result
@@ -124,6 +158,15 @@ int main(void)
 			continue; 
 
 		}
+	}
+
+	// Create additional process for printing philosopher statuses
+	result = fork();
+	if (result == 0) {
+		printer_process(shared_mem);
+	}
+	else {
+		printf("Printer process created of ID %d\n", result);
 	}
 
 	// Wait for all 5 children to finish by calling waitpid() 5 times
@@ -165,31 +208,200 @@ Arguments:
 void philosopher(int i, struct shared_memory* shared_mem){
 
 
+	// Let philosophers, think, try to eat, eat, stop eating, and then repeat
+	while (1) {
 
-	// Testing shared memory
-	for (int j = 0; j < 100; j++) {
-
-		// Hit down on semaphore
-		sem_wait(&shared_mem->add_mutex);
-
-		// Enter critical region
-		int temp = shared_mem -> k;
-		temp++;
-		usleep(5);
-		shared_mem -> k = temp;
-		usleep(5);
-
-		// Out of crit reg, hit up on semaphore
-		sem_post(&shared_mem->add_mutex);
+		philo_think();
+		take_forks(i, shared_mem);
+		philo_eat();
+		put_forks(i, shared_mem);
 
 	}
 
-
-	printf("PHILOSOPHER: I am the philosopher %d	k = %d\n", i, shared_mem -> k);
 	_exit(0); 
 
 }
 
+
+/*	Description:
+
+		Function that gets called when philosopher is in their thinking state. Must
+		happen for at least 2 seconds.
+
+*/
+void philo_think() {
+
+	printf("Philosopher currently thinking.\n");
+	sleep(THINK_TIME);
+
+}
+
+
+/*	Description:
+
+		Function that gets called when philosopher is in their eating state. Must
+		happen for at least 3 seconds.
+
+*/
+void philo_eat() {
+
+
+	printf("Philosopher currently eating.\n");
+	sleep(EAT_TIME);
+
+}
+
+
+/* 	Description:
+
+		Function is called when a philosopher is transitions from THINKING to HUNGRY.
+		Here, philospher tries to take two adjacent forks, and if can, enters EATING state.
+		If cannot, waits for adjacent philosphers to give up forks for them. 
+		
+	Arguments:
+	
+		<int i> : The philospher's ID. 
+		<struct shared_memory* shared_mem> : The struct of shared memory shared between philosopher processes.
+		
+*/
+void take_forks(int i, struct shared_memory* shared_mem) {
+
+	// Philo enters crit region
+	sem_wait(&shared_mem -> mutex);
+
+	// Set state of philo to hungry, and test if it can get forks
+	shared_mem -> philo_state[i] - HUNGRY;
+	test_forks(i, shared_mem);
+
+	// Exit crit. reg., and wait if forks weren't acquired
+	sem_post(&shared_mem -> mutex);
+	sem_wait(&shared_mem -> philo_sem[i]);
+
+}
+
+
+/*	Description:
+
+		Function is called when a philosopher transitions from EATING to THINKING.
+		When philospher gives up forks, lets adjacent philosophers know the forks are free
+		and sees if they can enter their eating state now if they are HUNGRY.  
+		
+	Arguments: 
+	
+		<int i> : the philosopher's ID. 
+		<struct shared_memory* shared_mem> : The struct of shared memory shared between philosopher processes.
+
+*/
+void put_forks(int i, struct shared_memory* shared_mem) {
+
+		// Philo enters crit reg
+		sem_wait(&shared_mem -> mutex);
+		
+		// Set philo to thinking, and let adjacent philos use forks if they are hungry.
+		shared_mem -> philo_state[i] = THINKING;
+		test_forks(LEFT, shared_mem);
+		test_forks(RIGHT, shared_mem);
+
+		// Exit philos crit reg
+		sem_post(&shared_mem -> mutex);
+
+
+}
+
+
+/* Description:
+
+		Function is called by philosopher when it checks to see if adjacent forks are free (adjacent
+		philosophers are not currently eating). If they are, AND philo is HUNGRY, semaphores set so that it enters eating state. 
+		If not not free, semaphores in take_forks() function make the philospher wait. If philo was not hungry, do nothing.
+		
+	Arguments:
+
+		<int i> : the philosopher's ID. 
+		<struct shared_memory* shared_mem> : The struct of shared memory shared between philosopher processes.
+	
+*/
+void test_forks(int i, struct shared_memory* shared_mem) {
+
+	// If calling philosopher is curerntly hungry, check if adjacent philos are eating.
+	// If both are not, let calling philosopher eat and increment philo's semaphore so it doesn't end up blocking itself
+	int this_state = shared_mem -> philo_state[i];
+	int left_state = shared_mem -> philo_state[LEFT];
+	int right_state = shared_mem -> philo_state[RIGHT];
+	if (this_state == HUNGRY && left_state != EATING && right_state != EATING) {
+		shared_mem -> philo_state[i] = EATING;
+		sem_post(&shared_mem -> philo_sem[i]);
+	}
+
+}
+
+
+/* 	Description:
+
+		Function is called by the printer process. Prints statuses of the 5 philosophers
+		every second. 
+		
+		Stops printing when all philosphers have reached the finished state.
+		
+	Arguments:
+	
+		<struct shared_memory* shared_mem> : Struct of shared memory between philospher processes. */
+void printer_process(struct shared_memory* shared_mem) {
+
+	while (check_finished(shared_mem -> philo_state) == 0) {
+
+		// Iterate through philo states and print out. 
+		for (int i = 0; i < PHILO_COUNT; i++) {
+
+			char* state_string;
+			switch (shared_mem -> philo_state[i]) {
+
+				case THINKING:
+					state_string = "thinking (0)";
+					break;
+				case HUNGRY:
+					state_string = "hungry   (1)";
+					break;
+
+				case EATING:
+					state_string = "eating   (2)";
+					break;
+
+				case FINISHED:
+					state_string = "finished (4)";
+					break;
+			}
+
+
+			printf("P%d %s\t", i, state_string);
+		}
+
+		printf("\n");
+
+		// Pause for 1 second
+		sleep(1);
+	}
+		
+
+	
+}
+
+
+/*	Description:
+
+		Function checks if all the states passed through parameters are all 
+		in FINISHED state. 
+		
+	Arguments:
+	
+		<int states[PHILO_COUNT]> : The integer array representative of the philosopher's current states. 
+		
+	Returns: 1 if states are all FINISHED, 0 otherwise. */
+int check_finished(int states[PHILO_COUNT]) {
+
+	return 0;
+
+}
 
 
 /* Description:
