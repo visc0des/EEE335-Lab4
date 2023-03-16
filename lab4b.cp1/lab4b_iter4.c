@@ -6,8 +6,10 @@
 		
 	Notes:
 
-		- Doing iteration 1 - process creation and destruction
+		- Doing iteration 1 - Process creation and destruction
 		- Doing iteration 2 - Adding shared memory
+		- Doing iteration 3 - Adding Semaphores
+
 
 		- For print statements, need to put \n at end of string so that the printf() library buffer prints the
 		string immediately. Was experiencing minor issues where print statements in philosophers weren't printing out in time, 
@@ -35,6 +37,10 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 
+// --- Libraries for iteration 3 ---
+
+#include <semaphore.h>
+
 
 // -- Declaring Macros --
 #define PHILO_COUNT 5
@@ -47,7 +53,9 @@
 
 struct shared_memory {
 	
-	int k; // <-- for testing in iteration 2. 
+	int k; // <-- for testing in iteration 2 and 3 of shared memory
+
+	sem_t add_mutex;
 
 };
 
@@ -59,11 +67,7 @@ void parent();
 // --- Main Entry Point ---
 
 int main(void)
-{
-
-	// Initialize shared memory int k to 0
-	struct shared_memory* test_mem = (struct shared_memory*) malloc(sizeof(struct shared_memory) * 1);
-	test_mem -> k = 0;
+{	
 
 	// ----- Code given from instructions to create shared memory ----
 
@@ -93,7 +97,15 @@ int main(void)
 		exit(-1);
 	}
 	
-	
+	// Initialize shared sempahore and its k value
+	int sem_result = sem_init(&shared_mem->add_mutex, 1, 1);
+	if (sem_result == -1) {
+		printf("Creation of semaphore failed.\n");
+		exit(-1);
+	}
+	shared_mem -> k = 0;
+
+
 	// Declaring var to capture fork() return result
 	int result;
 
@@ -152,14 +164,23 @@ Arguments:
 
 void philosopher(int i, struct shared_memory* shared_mem){
 
+
+
 	// Testing shared memory
 	for (int j = 0; j < 100; j++) {
 
+		// Hit down on semaphore
+		sem_wait(&shared_mem->add_mutex);
+
+		// Enter critical region
 		int temp = shared_mem -> k;
 		temp++;
 		usleep(5);
 		shared_mem -> k = temp;
 		usleep(5);
+
+		// Out of crit reg, hit up on semaphore
+		sem_post(&shared_mem->add_mutex);
 
 	}
 
