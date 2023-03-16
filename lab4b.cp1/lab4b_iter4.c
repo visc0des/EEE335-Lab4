@@ -207,6 +207,8 @@ Arguments:
 
 void philosopher(int i, struct shared_memory* shared_mem){
 
+	
+
 
 	// Let philosophers, think, try to eat, eat, stop eating, and then repeat
 	while (1) {
@@ -231,7 +233,6 @@ void philosopher(int i, struct shared_memory* shared_mem){
 */
 void philo_think() {
 
-	printf("Philosopher currently thinking.\n");
 	sleep(THINK_TIME);
 
 }
@@ -245,8 +246,6 @@ void philo_think() {
 */
 void philo_eat() {
 
-
-	printf("Philosopher currently eating.\n");
 	sleep(EAT_TIME);
 
 }
@@ -268,14 +267,19 @@ void take_forks(int i, struct shared_memory* shared_mem) {
 
 	// Philo enters crit region
 	sem_wait(&shared_mem -> mutex);
+	printf("Philosopher %d entered crit. reg. in take_forks(). \n", i);
 
 	// Set state of philo to hungry, and test if it can get forks
-	shared_mem -> philo_state[i] - HUNGRY;
+	shared_mem -> philo_state[i] = HUNGRY;
+
 	test_forks(i, shared_mem);
 
 	// Exit crit. reg., and wait if forks weren't acquired
 	sem_post(&shared_mem -> mutex);
+	printf("Philosopher %d left crit. reg. in take_forks().\n", i);
 	sem_wait(&shared_mem -> philo_sem[i]);
+	printf("Philosopher %d entering eating state in take_forks().\n", i);
+	
 
 }
 
@@ -296,6 +300,8 @@ void put_forks(int i, struct shared_memory* shared_mem) {
 
 		// Philo enters crit reg
 		sem_wait(&shared_mem -> mutex);
+		printf("Philosopher %d entered crit. reg. in put_forks().\n", i);
+
 		
 		// Set philo to thinking, and let adjacent philos use forks if they are hungry.
 		shared_mem -> philo_state[i] = THINKING;
@@ -304,6 +310,8 @@ void put_forks(int i, struct shared_memory* shared_mem) {
 
 		// Exit philos crit reg
 		sem_post(&shared_mem -> mutex);
+
+		printf("Philosopher %d left crit. reg. in put_forks().\n", i);
 
 
 }
@@ -329,6 +337,7 @@ void test_forks(int i, struct shared_memory* shared_mem) {
 	int left_state = shared_mem -> philo_state[LEFT];
 	int right_state = shared_mem -> philo_state[RIGHT];
 	if (this_state == HUNGRY && left_state != EATING && right_state != EATING) {
+		printf("Philosopher %d has acquired forks. Will start eating soon.\n", i);
 		shared_mem -> philo_state[i] = EATING;
 		sem_post(&shared_mem -> philo_sem[i]);
 	}
