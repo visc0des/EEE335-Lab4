@@ -17,6 +17,29 @@
 
 		- _exit() is used in child processes since it does not flush the stdio buffer in the parent process. 
 		Basically, for good practice. 
+
+		- Huh, turns out when I "killed" the program in the console, the created philosopher processes were never actually killed - the program
+		was simply removed from the console. That explains the system started to get slower and slower and working less correctly as I kept running
+		the program which did not have the philosophers kill themselves after a certain point in time. 
+
+		This is what I believe caused my issue of the program refusing to work properly - there were too many processes running in the background, 
+		hogging up all of the cpu time and not letting the most recently created philosopher processes to run at their full capacity - this must
+		have been what caused the program to do really weird things, where philosophers would have supposedly "completed" a cycle when it has entered
+		the hungry state - obviously, it had not completed an entire cycle at this point. Even some adjacent philosophers would be in the eating
+		state when I had never programmed them to do so. At one point, a philsopher would for some darn reason enter the finished state, when I had
+		never even implemented any sort of transition to the finished state yet. Some philosophers weren't even respecting the times! For example,
+		I would set the EATING time to be 10 seconds, but most philosophers would only eat for 2 seconds!!!!! There was a 1/8 chance a philosopher would
+		respect the entire wait time. Clearly something was definitely wrong. 
+
+		Obviously the quick solution was to manually kill all the created processes associated with the program from a terminal. This instantly
+		solved the problem where the code is now performing exactly how I'd like it to - philosophers incrementing completed cycles when they
+		are supposed to, and no adjacent philosophers eating next to eachother. 
+
+
+
+	Status:
+
+		- Bug found - too many processes running in the background. They weren't getting killed automatically. Nice.
 	
 		
 	Author: OCdt Liethan Velasco
@@ -42,9 +65,11 @@
 #include <semaphore.h>
 
 
+
+
 // -- Declaring Macros --
 
-#define PHILO_COUNT 5
+#define PHILO_COUNT 3
 #define THINKING 	0 		// Philosopher macros to represent states
 #define HUNGRY 		1
 #define EATING 		2	
@@ -55,6 +80,7 @@
 
 #define THINK_TIME 	2
 #define EAT_TIME 	3
+#define MAX_CYCLES  1
 
 
 // --- Initializing variables ---
@@ -65,10 +91,13 @@
 struct shared_memory {
 	
 	sem_t mutex;		// Semaphore for when philos enter their crit reg. 
-	sem_t philo_sem[5]; // Semaphores repping philos getting forks 
+	sem_t philo_sem[PHILO_COUNT]; // Semaphores repping philos getting forks 
 
 	// Creating array of states tracking if philos are thinking, hungry, or eating
-	int philo_state[5];
+	int philo_state[PHILO_COUNT];
+
+	// Array to keep track of philosopher cycles
+	int philo_cycles[PHILO_COUNT];
 
 };
 
@@ -126,7 +155,7 @@ int main(void)
 	}
 	
 	// Initialize all philosopher semaphores to 0 (none of them have forks yet),
-	// and set their states to all THINKING. 
+	// and set their states to all THINKING. Initialize philosopher cycles
 	for (int i = 0; i < PHILO_COUNT; i++) {
 		
 		sem_result = sem_init(&shared_mem -> philo_sem[i], 1, 0);
@@ -137,7 +166,10 @@ int main(void)
 
 		shared_mem -> philo_state[i] = THINKING;
 
+		shared_mem -> philo_cycles[i] = 0;
+
 	}
+
 
 
 	// Declaring var to capture fork() return result
@@ -161,6 +193,7 @@ int main(void)
 	}
 
 	// Create additional process for printing philosopher statuses
+
 	result = fork();
 	if (result == 0) {
 		printer_process(shared_mem);
@@ -168,10 +201,11 @@ int main(void)
 	else {
 		printf("Printer process created of ID %d\n", result);
 	}
+	
 
-	// Wait for all 5 children to finish by calling waitpid() 5 times
+	// Wait for all philo children and printer to finish by calling waitpid()
 	int status;
-	for (int i = 0; i < PHILO_COUNT; i++) {
+	for (int i = 0; i < PHILO_COUNT + 1; i++) {
 		waitpid(-1, &status, 0);
 	}
 
@@ -207,9 +241,6 @@ Arguments:
 
 void philosopher(int i, struct shared_memory* shared_mem){
 
-	
-
-
 	// Let philosophers, think, try to eat, eat, stop eating, and then repeat
 	while (1) {
 
@@ -217,6 +248,11 @@ void philosopher(int i, struct shared_memory* shared_mem){
 		take_forks(i, shared_mem);
 		philo_eat();
 		put_forks(i, shared_mem);
+
+		// Check if philosopher was set to finished state. If so, exit loop.
+		if (shared_mem -> philo_state[i] == FINISHED) {
+			break;
+		}
 
 	}
 
@@ -232,6 +268,7 @@ void philosopher(int i, struct shared_memory* shared_mem){
 
 */
 void philo_think() {
+
 
 	sleep(THINK_TIME);
 
@@ -267,7 +304,6 @@ void take_forks(int i, struct shared_memory* shared_mem) {
 
 	// Philo enters crit region
 	sem_wait(&shared_mem -> mutex);
-	printf("Philosopher %d entered crit. reg. in take_forks(). \n", i);
 
 	// Set state of philo to hungry, and test if it can get forks
 	shared_mem -> philo_state[i] = HUNGRY;
@@ -276,9 +312,7 @@ void take_forks(int i, struct shared_memory* shared_mem) {
 
 	// Exit crit. reg., and wait if forks weren't acquired
 	sem_post(&shared_mem -> mutex);
-	printf("Philosopher %d left crit. reg. in take_forks().\n", i);
 	sem_wait(&shared_mem -> philo_sem[i]);
-	printf("Philosopher %d entering eating state in take_forks().\n", i);
 	
 
 }
@@ -300,19 +334,18 @@ void put_forks(int i, struct shared_memory* shared_mem) {
 
 		// Philo enters crit reg
 		sem_wait(&shared_mem -> mutex);
-		printf("Philosopher %d entered crit. reg. in put_forks().\n", i);
-
 		
-		// Set philo to thinking, and let adjacent philos use forks if they are hungry.
-		shared_mem -> philo_state[i] = THINKING;
+		// Set philo to thinking if not completing 4th cycle, otherwise set FINISHED. 
+		// Also, let adjacent philos use forks if they are hungry.
+		shared_mem -> philo_state[i] = (shared_mem -> philo_cycles[i] == (MAX_CYCLES - 1)) ? FINISHED : THINKING; 
 		test_forks(LEFT, shared_mem);
 		test_forks(RIGHT, shared_mem);
 
+		// Increment philosopher's total cycles completed
+		shared_mem -> philo_cycles[i]++;
+
 		// Exit philos crit reg
 		sem_post(&shared_mem -> mutex);
-
-		printf("Philosopher %d left crit. reg. in put_forks().\n", i);
-
 
 }
 
@@ -337,10 +370,10 @@ void test_forks(int i, struct shared_memory* shared_mem) {
 	int left_state = shared_mem -> philo_state[LEFT];
 	int right_state = shared_mem -> philo_state[RIGHT];
 	if (this_state == HUNGRY && left_state != EATING && right_state != EATING) {
-		printf("Philosopher %d has acquired forks. Will start eating soon.\n", i);
 		shared_mem -> philo_state[i] = EATING;
 		sem_post(&shared_mem -> philo_sem[i]);
 	}
+
 
 }
 
@@ -357,7 +390,9 @@ void test_forks(int i, struct shared_memory* shared_mem) {
 		<struct shared_memory* shared_mem> : Struct of shared memory between philospher processes. */
 void printer_process(struct shared_memory* shared_mem) {
 
-	while (check_finished(shared_mem -> philo_state) == 0) {
+	
+	int print_info = 1;
+	while (print_info) {
 
 		// Iterate through philo states and print out. 
 		for (int i = 0; i < PHILO_COUNT; i++) {
@@ -373,7 +408,7 @@ void printer_process(struct shared_memory* shared_mem) {
 					break;
 
 				case EATING:
-					state_string = "eating   (2)";
+					state_string = "EATING   (2)";
 					break;
 
 				case FINISHED:
@@ -382,16 +417,29 @@ void printer_process(struct shared_memory* shared_mem) {
 			}
 
 
-			printf("P%d %s\t", i, state_string);
+			printf("P%d %s  [%d]\t", i, state_string, shared_mem -> philo_cycles[i]);
 		}
 
-		printf("\n");
+		
+		// Iterate through philo cycles and print out
+		printf("\tPHILO CYCLES: [");
+		for (int i = 0; i < PHILO_COUNT; i++) {
+			printf(" %d ", shared_mem -> philo_cycles[i]);
+		}
+		printf("]\n");
+
+		// Check if all philos are in finished state. If so, stop loop. 
+		if (check_finished(shared_mem -> philo_state)) {
+			print_info = 0;
+		}
 
 		// Pause for 1 second
 		sleep(1);
-	}
-		
 
+	} 
+
+	// End process here
+	_exit(0);
 	
 }
 
@@ -408,7 +456,13 @@ void printer_process(struct shared_memory* shared_mem) {
 	Returns: 1 if states are all FINISHED, 0 otherwise. */
 int check_finished(int states[PHILO_COUNT]) {
 
-	return 0;
+	int ret_val = 1;
+	for (int i = 0; i < PHILO_COUNT; i++) {
+		if (states[i] != FINISHED){
+			ret_val = 0;
+		}
+	}
+	return ret_val;
 
 }
 
@@ -421,8 +475,6 @@ int check_finished(int states[PHILO_COUNT]) {
 */
 void parent() {
 	
-	printf("PARENT: I am the parent process.\n");
-
-	exit(0);
+	printf("PARENT: All philosophers have finished eating.\n");
 
 }
