@@ -24,7 +24,6 @@
 
 // --- Import modules ---
 
-#include "semaphores.h"
 #include "util.h"
 #include <semaphore.h>
 
@@ -36,7 +35,7 @@ sem_t empty;
 sem_t full;
 
 
-// --- Creating a global print job counter to make clear threads are not stepping over eachother ---
+// Creating a global print job counter to make clear threads are not stepping over eachother
 int global_printjob_counter = 0;
 
 
@@ -66,7 +65,7 @@ void *semaphore_printer(void *arg)
 void *semaphore_process(void *arg)
 {
 	int myid = *((int*)arg);
-	int job = 0;
+	// int job = 0; <-- Was replaced with a global print job counter
 
 	while(true)
 	{
