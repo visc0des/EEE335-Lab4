@@ -23,6 +23,9 @@
 #include "util.h"
 #include "freeforall.h"
 
+// Using global counter variable for print jobs
+int global_print_job_counter = 0;
+
 
 // --- Create needed variables ---
 
@@ -47,7 +50,7 @@ int interested[2] = {FALSE, FALSE};
 void *peterson_process(void *arg)
 {
 	int myid = *((int*)arg);
-	int job = 0;
+	// int job = 0;
 	
 	while(true)
 	{
@@ -64,8 +67,8 @@ void *peterson_process(void *arg)
 
 
 		// When passed gate, create job in spooler, set this thread's interested to FALSE
-		produce_job(myid, job);
-		job++;
+		produce_job(myid, global_print_job_counter);
+		global_print_job_counter++;
 		interested[myid] = FALSE;
 	
 
