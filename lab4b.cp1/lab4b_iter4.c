@@ -69,7 +69,7 @@
 
 // -- Declaring Macros --
 
-#define PHILO_COUNT 3
+#define PHILO_COUNT 5
 #define THINKING 	0 		// Philosopher macros to represent states
 #define HUNGRY 		1
 #define EATING 		2	
@@ -80,7 +80,7 @@
 
 #define THINK_TIME 	2
 #define EAT_TIME 	3
-#define MAX_CYCLES  1
+#define MAX_CYCLES  4
 
 
 // --- Initializing variables ---
@@ -373,7 +373,6 @@ void test_forks(int i, struct shared_memory* shared_mem) {
 		shared_mem -> philo_state[i] = EATING;
 		sem_post(&shared_mem -> philo_sem[i]);
 	}
-
 
 }
 

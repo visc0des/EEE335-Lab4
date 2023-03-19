@@ -61,9 +61,6 @@ void parent();
 int main(void)
 {
 
-	// Initialize shared memory int k to 0
-	// struct shared_memory* test_mem = (struct shared_memory*) malloc(sizeof(struct shared_memory) * 1);
-	// test_mem -> k = 0;
 
 	// ----- Code given from instructions to create shared memory ----
 
@@ -92,6 +89,7 @@ int main(void)
 		printf("Function mmap() failed.\n");
 		exit(-1);
 	}
+	shared_mem -> k = 0;
 	
 	
 	// Declaring var to capture fork() return result

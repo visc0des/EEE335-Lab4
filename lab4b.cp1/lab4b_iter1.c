@@ -74,11 +74,6 @@ int main(void)
 
 	// Back in parent here, call parent()
 	parent();
-	
-
-	
-
-	
 
 }
 
